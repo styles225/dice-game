@@ -1,84 +1,150 @@
 /*
 GAME RULES:
-
 - The game has 2 players, playing in rounds
 - In each turn, a player rolls a dice as many times as he whishes. Each result get added to his ROUND score
 - BUT, if the player rolls a 1, all his ROUND score gets lost. After that, it's the next player's turn
-- The player can choose to 'Hold', which means that his ROUND score gets added to his GLBAL score. After that, it's the next player's turn
-- The first player to reach 100 points on GLOBAL score wins the game
-
+- The player can choose to 'Hold', which means that his ROUND score gets added to his TOTAL score. After that, it's the next player's turn
+- The first player to reach 10 points on TOTAL score wins the game
 */
-// my version
 
 // model
 var model = (function() {
   var current, activePlayer;
   current = 0;
   activePlayer = 0;
+  scores = [0, 0]
 
   return {
+    // return current round score; if 1, current score = 0
     currentVal: function(dieNum) {
       if (dieNum !== 1) {
-        // return current += dieNum;
-        console.log(current += dieNum);
-        return current;
+        return current += dieNum;
       } else {
         current = 0;
-        console.log(current);
         return current;
       }
     },
+
+    // return Player 1 or Player 2 value
     getPlayer: function() {
       return activePlayer;
     },
+
+    // update Player 1 or Player 2
     setPlayer: function(player) {
       activePlayer = player;
     },
+
+    // change players
     nextPlayer: function() {
       activePlayer === 0 ? activePlayer = 1 : activePlayer = 0;
     },
-    setCurrent: function() {
+
+    // reset Current value to 0
+    resetCurrent: function() {
       current = 0;
+    },
+
+    // update total score for current player
+    updateScore: function(turn) {
+      scores[turn] += current;
+    },
+
+    // return total score for current player
+    getTotal: function(turn) {
+      return scores[turn];
     }
   }
-
 })();
 
 // view
 var view = (function() {
   return {
+    // update dice image
     showDieNum: function(dieNum) {
       document.getElementById('dice-0').src = 'dice-' + dieNum + '.png';
     },
+
+    // update value in Current div
     updateCur: function(cur, player) {
       document.getElementById('current-' + player).innerHTML = cur;
     },
+
+    // remove .active class from player whose turn just ended, add .active class to next player
     activeClass: function() {
       var i;
       for (i = 0; i < 2; i++) {
         document.querySelector('.player-' + i + '-panel').classList.toggle('active');
       }
+    },
+
+    // update value in Total div
+    updateTotal: function(curPlayer, total) {
+      document.getElementById('score-' + curPlayer).innerHTML = total;
+    },
+
+    // update styling for new game, reset current & total scores to 0 in UI
+    newGame: function() {
+      var i;
+      for (i = 0; i < 2; i++) {
+        document.getElementById('score-' + i).innerHTML = 0;
+        document.getElementById('current-' + i).innerHTML = 0;
+        document.querySelector('.player-' + i + '-panel').classList.remove('active');
+        document.querySelector('.player-' + i + '-panel').classList.remove('winner');
+        document.getElementById('name-' + i).innerHTML = 'Player ' + (i + 1);
+      }
+      document.getElementById('dice-0').style.visibility = "visible";
+      document.querySelector('.player-0-panel').classList.add('active');
+      document.querySelector('.btn-roll').style.visibility = 'visible';
+      document.querySelector('.btn-hold').style.visibility = 'visible';
+    },
+
+    // hide roll & hide buttons, remove .active class, add .winner class to victor, change player text
+    endGame: function() {
+      document.querySelector('.btn-roll').style.visibility = 'hidden';
+      document.querySelector('.btn-hold').style.visibility = 'hidden';
+      document.querySelector('.player-' + player + '-panel').classList.remove('active');
+      document.querySelector('.player-' + player + '-panel').classList.add('winner');
+      document.getElementById('name-' + player).innerHTML = 'Winner!';
     }
   }
 })();
+
 // controller
 var controller = (function(m,v) {
-
+  // initialize the app
   init();
+
+  // reset game if 'new game' button pressed
   document.querySelector('.btn-new').addEventListener('click', init);
 
+  // 'roll dice' button logic
   document.querySelector('.btn-roll').addEventListener('click', function() {
     
-    var die, current;
+    var die, current, roundTotal, sum;
     die = Math.floor(Math.random() * 6) + 1;
     current = m.currentVal(die);
     player = m.getPlayer();
-    
+    roundTotal = m.getTotal(player);
+    sum = roundTotal + current;    
     v.showDieNum(die);
 
 
     if (die > 1) {
-      v.updateCur(current, player);
+      // if (current score is not 1 AND current score + total score less than 10) then update current score for active player
+      if (sum < 10) {
+        v.updateCur(current, player);
+
+      // if (current score is not 1 AND current score + total score greater or equal to 10) current player wins
+      } else {
+        m.resetCurrent();
+        v.updateCur(0, player);
+        m.updateScore(player);
+        v.updateTotal(player, sum);
+        v.endGame(player);
+      }
+
+      // if player rolls a 1, lose a turn and next player's turn
     } else {
       v.updateCur(0, player);
       v.activeClass();
@@ -86,147 +152,24 @@ var controller = (function(m,v) {
     }
   });
 
+  // add current score to player's total score, reset Current score to 0 for next player, next player
+  document.querySelector('.btn-hold').addEventListener('click', function() {
+    var player, totalScore;
 
+    player = m.getPlayer()
+    m.updateScore(player);
+    totalScore = m.getTotal(player);
+    m.resetCurrent();
+    v.activeClass();
+    v.updateTotal(player, totalScore);
+    v.updateCur(0, player);
+    m.nextPlayer();
+  });
+
+  // player 1's turn, reset score to 0 in model, update page styling & set scores to 0 in UI
   function init() {
-
     m.setPlayer(0);
-    m.setCurrent();
-
-    var i;
-    for (i = 0; i < 2; i++) {
-      document.getElementById('score-' + i).innerHTML = 0;
-      document.getElementById('current-' + i).innerHTML = 0;
-      //document.getElementById('dice-' + i).style.visibility = 'hidden';
-      document.querySelector('.player-' + i + '-panel').classList.remove('active');
-    }
-    document.getElementById('dice-0').style.visibility = "visible";
-    // document.getElementById('dice-0').style.visibility = 'hidden';
-    document.querySelector('.player-0-panel').classList.add('active');
+    m.resetCurrent();
+    v.newGame();
   }
-
-
 })(model, view);
-
-
-
-
-// new game & init = start new game:
-// - player 1
-// - player 1 styling
-// - disappear dice
-// - score = 0
-
-
-
-
-
-
-
-// code along w/ jonas
-// var scores, roundScore, activePlayer, gamePlaying;
-
-// init();
-
-
-// document.querySelector('.btn-roll').addEventListener('click', function() {
-//     if(gamePlaying) {
-//         // 1. Random number
-//         var dice = Math.floor(Math.random() * 6) + 1;
-
-//         //2. Display the result
-//         var diceDOM = document.querySelector('.dice');
-//         diceDOM.style.display = 'block';
-//         diceDOM.src = 'dice-' + dice + '.png';
-
-
-//         //3. Update the round score IF the rolled number was NOT a 1
-//         if (dice !== 1) {
-//             //Add score
-//             roundScore += dice;
-//             document.querySelector('#current-' + activePlayer).textContent = roundScore;
-//         } else {
-//             //Next player
-//             nextPlayer();
-//         }
-//     }    
-// });
-
-
-// document.querySelector('.btn-hold').addEventListener('click', function() {
-//     if (gamePlaying) {
-//         // Add CURRENT score to GLOBAL score
-//         scores[activePlayer] += roundScore;
-
-//         // Update the UI
-//         document.querySelector('#score-' + activePlayer).textContent = scores[activePlayer];
-
-//         // Check if player won the game
-//         if (scores[activePlayer] >= 100) {
-//             document.querySelector('#name-' + activePlayer).textContent = 'Winner!';
-//             document.querySelector('.dice').style.display = 'none';
-//             document.querySelector('.player-' + activePlayer + '-panel').classList.add('winner');
-//             document.querySelector('.player-' + activePlayer + '-panel').classList.remove('active');
-//             gamePlaying = false;
-//         } else {
-//             //Next player
-//             nextPlayer();
-//         }
-//     }
-// });
-
-
-// function nextPlayer() {
-//     //Next player
-//     activePlayer === 0 ? activePlayer = 1 : activePlayer = 0;
-//     roundScore = 0;
-
-//     document.getElementById('current-0').textContent = '0';
-//     document.getElementById('current-1').textContent = '0';
-
-//     document.querySelector('.player-0-panel').classList.toggle('active');
-//     document.querySelector('.player-1-panel').classList.toggle('active');
-
-//     //document.querySelector('.player-0-panel').classList.remove('active');
-//     //document.querySelector('.player-1-panel').classList.add('active');
-
-//     document.querySelector('.dice').style.display = 'none';
-// }
-
-// document.querySelector('.btn-new').addEventListener('click', init);
-
-// function init() {
-//     scores = [0, 0];
-//     activePlayer = 0;
-//     roundScore = 0;
-//     gamePlaying = true;
-    
-//     document.querySelector('.dice').style.display = 'none';
-
-//     document.getElementById('score-0').textContent = '0';
-//     document.getElementById('score-1').textContent = '0';
-//     document.getElementById('current-0').textContent = '0';
-//     document.getElementById('current-1').textContent = '0';
-//     document.getElementById('name-0').textContent = 'Player 1';
-//     document.getElementById('name-1').textContent = 'Player 2';
-//     document.querySelector('.player-0-panel').classList.remove('winner');
-//     document.querySelector('.player-1-panel').classList.remove('winner');
-//     document.querySelector('.player-0-panel').classList.remove('active');
-//     document.querySelector('.player-1-panel').classList.remove('active');
-//     document.querySelector('.player-0-panel').classList.add('active');
-// }
-
-
-
-
-
-
-
-
-/*
-YOUR 3 CHALLENGES
-Change the game to follow these rules:
-
-1. A player looses his ENTIRE score when he rolls two 6 in a row. After that, it's the next player's turn. (Hint: Always save the previous dice roll in a separate variable)
-2. Add an input field to the HTML where players can set the winning score, so that they can change the predefined score of 100. (Hint: you can read that value with the .value property in JavaScript. This is a good oportunity to use google to figure this out :)
-3. Add another dice to the game, so that there are two dices now. The player looses his current score when one of them is a 1. (Hint: you will need CSS to position the second dice, so take a look at the CSS code for the first one.)
-*/
