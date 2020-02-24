@@ -8,11 +8,113 @@ GAME RULES:
 - The first player to reach 100 points on GLOBAL score wins the game
 
 */
-
 // my version
 
+// model
+var model = (function() {
+  var current, activePlayer;
+  current = 0;
+  activePlayer = 0;
+
+  return {
+    currentVal: function(dieNum) {
+      if (dieNum !== 1) {
+        // return current += dieNum;
+        console.log(current += dieNum);
+        return current;
+      } else {
+        current = 0;
+        console.log(current);
+        return current;
+      }
+    },
+    getPlayer: function() {
+      return activePlayer;
+    },
+    setPlayer: function(player) {
+      activePlayer = player;
+    },
+    nextPlayer: function() {
+      activePlayer === 0 ? activePlayer = 1 : activePlayer = 0;
+    },
+    setCurrent: function() {
+      current = 0;
+    }
+  }
+
+})();
+
+// view
+var view = (function() {
+  return {
+    showDieNum: function(dieNum) {
+      document.getElementById('dice-0').src = 'dice-' + dieNum + '.png';
+    },
+    updateCur: function(cur, player) {
+      document.getElementById('current-' + player).innerHTML = cur;
+    },
+    activeClass: function() {
+      var i;
+      for (i = 0; i < 2; i++) {
+        document.querySelector('.player-' + i + '-panel').classList.toggle('active');
+      }
+    }
+  }
+})();
+// controller
+var controller = (function(m,v) {
+
+  init();
+  document.querySelector('.btn-new').addEventListener('click', init);
+
+  document.querySelector('.btn-roll').addEventListener('click', function() {
+    
+    var die, current;
+    die = Math.floor(Math.random() * 6) + 1;
+    current = m.currentVal(die);
+    player = m.getPlayer();
+    
+    v.showDieNum(die);
 
 
+    if (die > 1) {
+      v.updateCur(current, player);
+    } else {
+      v.updateCur(0, player);
+      v.activeClass();
+      m.nextPlayer();
+    }
+  });
+
+
+  function init() {
+
+    m.setPlayer(0);
+    m.setCurrent();
+
+    var i;
+    for (i = 0; i < 2; i++) {
+      document.getElementById('score-' + i).innerHTML = 0;
+      document.getElementById('current-' + i).innerHTML = 0;
+      //document.getElementById('dice-' + i).style.visibility = 'hidden';
+      document.querySelector('.player-' + i + '-panel').classList.remove('active');
+    }
+    document.getElementById('dice-0').style.visibility = "visible";
+    // document.getElementById('dice-0').style.visibility = 'hidden';
+    document.querySelector('.player-0-panel').classList.add('active');
+  }
+
+
+})(model, view);
+
+
+
+
+// new game & init = start new game:
+// - player 1
+// - player 1 styling
+// - disappear dice
+// - score = 0
 
 
 
